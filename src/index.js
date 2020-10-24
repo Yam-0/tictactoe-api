@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const config = require("./config");
 const db = require("./db");
+const authMiddleware = require("./middlewares/auth");
 
 const start = async () => {
   await db.connect();
@@ -11,6 +12,7 @@ const start = async () => {
   app.use(bodyParser.urlencoded({ extended: false }));
   app.use(bodyParser.json());
 
+  app.use(authMiddleware);
   app.use("/user", require("./routes/user"));
 
   app.listen(config.PORT, () => {
