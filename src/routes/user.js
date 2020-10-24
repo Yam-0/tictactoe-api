@@ -12,7 +12,7 @@ const {
 const { validationResult } = require("express-validator");
 const userValidator = require("../validators/user");
 
-router.post("/register", userValidator.register, async (req, res) => {
+router.post("/", userValidator.register, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.json(new FailResponse({ validation: errors.array() }));
@@ -41,9 +41,51 @@ router.post("/register", userValidator.register, async (req, res) => {
       last_name: req.body["last_name"],
     });
     const result = await newUser.save();
-    return res.json(new SuccessResponse(result));
+
+    const { _id, username, first_name, last_name } = result;
+
+    const responseData = {};
+    if (_id) responseData["_id"] = _id;
+    if (username) responseData["username"] = username;
+    if (first_name) responseData["first_name"] = first_name;
+    if (last_name) responseData["last_name"] = last_name;
+
+    return res.json(new SuccessResponse(responseData));
   } catch (err) {
     console.log("Error upon registration attempt: ", err);
+    return res.json(
+      new ErrorResponse("Something went wrong, try again later.")
+    );
+  }
+});
+
+router.put("/", userValidator.putUser, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.json(new FailResponse({ validation: errors.array() }));
+  }
+
+  try {
+    const user = req.user;
+
+    if (user) {
+      const { _id, username, first_name, last_name } = req.body;
+
+      const responseData = {};
+      if (_id) responseData["_id"] = _id;
+      if (username) responseData["username"] = username;
+      if (first_name) responseData["first_name"] = first_name;
+      if (last_name) responseData["last_name"] = last_name;
+
+      const result = await user.update(responseData);
+      return res.json(new SuccessResponse(result));
+    }
+
+    return res.json(
+      new FailResponse({ token: "No profile found for user token" })
+    );
+  } catch (err) {
+    console.log("Error upon putting profile: ", err);
     return res.json(
       new ErrorResponse("Something went wrong, try again later.")
     );
@@ -100,12 +142,12 @@ router.get("/profile", userValidator.profile, async (req, res) => {
     const user = req.user;
 
     if (user) {
-      const result = {
+      const responseData = {
         _id: user["_id"],
         first_name: user["first_name"],
         last_name: user["last_name"],
       };
-      return res.json(new SuccessResponse(result));
+      return res.json(new SuccessResponse(responseData));
     }
 
     return res.json(
@@ -113,38 +155,6 @@ router.get("/profile", userValidator.profile, async (req, res) => {
     );
   } catch (err) {
     console.log("Error upon getting profile: ", err);
-    return res.json(
-      new ErrorResponse("Something went wrong, try again later.")
-    );
-  }
-});
-
-router.put("/", userValidator.putUser, async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.json(new FailResponse({ validation: errors.array() }));
-  }
-
-  try {
-    const user = req.user;
-
-    if (user) {
-      const { username, first_name, last_name } = req.body;
-
-      const data = {};
-      if (username) data["username"] = username;
-      if (first_name) data["first_name"] = first_name;
-      if (last_name) data["last_name"] = last_name;
-
-      const result = await user.update(data);
-      return res.json(new SuccessResponse(result));
-    }
-
-    return res.json(
-      new FailResponse({ token: "No profile found for user token" })
-    );
-  } catch (err) {
-    console.log("Error upon putting profile: ", err);
     return res.json(
       new ErrorResponse("Something went wrong, try again later.")
     );
